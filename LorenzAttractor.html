@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<style>
+		body {
+			margin 0;
+			overflow: hidden;
+			}
+	</style>
+	<script src="https://web.cs.manchester.ac.uk/three/js/stats.min.js"></script>
+</head>
+<body>
+	<script type="module">
+	import * as THREE from 
+		"https://web.cs.manchester.ac.uk/three/three.js-master/build/three.module.js";
+	import { OrbitControls } from 
+		"https://web.cs.manchester.ac.uk/three/three.js-master/examples/jsm/controls/OrbitControls.js";	
+
+		function init(){
+			scene = new THREE.Scene();
+
+			//create the camera
+			camera = new THREE.PerspectiveCamera(75, window.innerWidth/ window.innerHeight, 1, 10000);
+			camera.position.set(0, 0, 100);
+
+			//create the renderer
+			renderer = new THREE.WebGLRenderer();
+			renderer.setSize(window.innerWidth, window.innerHeight);
+			document.body.appendChild(renderer.domElement);
+
+			//create the controls
+			controls = new OrbitControls(camera, renderer.domElement);
+			controls.autoRotate = true;
+
+			//create the Lorenz geometry
+			resetIndexes();
+
+			for (var i = 0 ; i <NUM_LORENZ; i++) {
+				LorenzGeometry[i] = new THREE.BufferGeometry();
+				Lorenz[i] = new Float32Array(MAXPOINTS*3);
+				LorenzGeometry[i].setAttribute('position', new THREE.BufferAttribute(Lorenz[i],3));
+
+				//create the Lorenz material
+				LorenzMaterial[i] = new THREE.LineBasicMaterial({color : LorenzColours[i], linewidth: 1});
+				LorenzLine[i] = new THREE.Line(LorenzGeometry[i], LorenzMaterial[i]);
+
+				//add the Lorenz line to the scene
+				scene.add(LorenzLine[i]);
+
+				//Define a small red sphere
+				SphereGeometry[i] = new THREE.SphereGeometry(5,5,5);
+				SphereMaterial[i] = new THREE.MeshBasicMaterial({color: SphereColours[i]});
+				LorenzSphere[i] = new THREE.Mesh(SphereGeometry[i], SphereMaterial[i]);
+				//add the sphere to the scene
+				scene.add(LorenzSphere[i]);
+		}
+			
+		}
+
+		function animate(){
+			//called at every frame. Adds a new Lorenz point and updates
+			
+			requestAnimationFrame(animate);
+			renderer.render(scene,camera);
+			updateLorenz();
+			
+			if(drawCount > MAXPOINTS)
+				{
+					resetIndexes();
+				}			
+			
+		}
+
+		function updateLorenz() {
+			for (let n= 0; n < NUM_LORENZ; n++) {
+				var LorenzPoints = LorenzLine[n].geometry.attributes.position.array;
+				// update the Lorenz velocities and co-ordinates
+
+				var x1, y1, z1;
+				x1 = a*(y[n]-x[n]);
+				y1 = b * x[n] - y[n] - x[n] * z[n];
+				z1 = (-1)*c*z[n] + x[n] * y[n];
+				x[n] = (x[n] + dt * x1);
+				y[n] = (y[n] + dt * y1);
+				z[n] = (z[n] + dt * z1);
+				// update the position of the sphere to the newest point
+				LorenzSphere[n].position.set(new THREE.Vector3(x[n], y[n], z[n]));
+
+				//Add the newest point to the LorenzPoints array
+				//Note that points in the LorenzPoint array occupy 3 successive slots for the x, y and z components
+				LorenzPoints[drawCount] = x[n]
+				LorenzPoints[drawCount+1] = y[n]
+				LorenzPoints[drawCount+2] = z[n]
+								
+
+				//Set the range of points to be drawn and draw them
+				LorenzLine[n].geometry.setDrawRange(0,drawCount/3)
+				LorenzLine[n].geometry.attributes.position.needsUpdate = true;
+				} // for
+			drawCount+= 3;
+			} 
+
+		function resetIndexes(){
+			for(var i= 0; i< NUM_LORENZ; i++){
+				x[i] = Math.random()*((-(i+1))**(i+1));
+				y[i] = Math.random()*((-(i+1))**(i+1));
+				z[i] = Math.random()*((-(i+1))**(i+1));
+			}
+			drawCount = 0;
+		}
+
+		var camera, scene, renderer, controls;
+		var NUM_LORENZ = 2;
+
+		var LorenzSphere = new Array(NUM_LORENZ);
+		var LorenzLine = new Array(MAXPOINTS);
+		var LorenzGeometry = new Array(NUM_LORENZ);
+		var Lorenz = new Array(NUM_LORENZ);
+		var LorenzColours = new Array(0x00FF00, 0xff0000);
+
+		var LorenzMaterial = new Array(NUM_LORENZ);
+		var SphereGeometry = new Array(NUM_LORENZ);
+		var SphereMaterial = new Array(NUM_LORENZ);
+		var Sphere = new Array(NUM_LORENZ);
+		var SphereColours = new Array(0x00FF00, 0xff0000);
+		var x = new Array(NUM_LORENZ),
+		y = new Array(NUM_LORENZ),
+		z = new Array(NUM_LORENZ),
+		a = 10.0,
+		b = 28.0,
+		c = 2.6;
+		var dt= 0.01; // timestep.
+		var drawCount = 0; // how many points added so far.
+		var MAXPOINTS= 500000;
+		
+
+		init();
+
+		animate();	
+		
+
+</script>
+</body>
+</html>
